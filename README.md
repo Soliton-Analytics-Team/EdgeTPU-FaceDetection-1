@@ -36,7 +36,7 @@ Coral Dev Board（以下「ボード」）のセットアップは[Coralサイ�
 
 * 「mdt shell」を最初に（２回目以後は問題無し）実行する際に、有線LANまたはWi-FiでEthernet接続が生きているとSSH接続エラーが発生することがあります。その場合は以下の手順で接続を無効にしましょう（有線LANならケーブル引っこ抜いてもいいかも）：
 
-```
+```Shell
 # nmcli connection show
 NAME                UUID                                  TYPE            DEVICE
 Wired connection 1  29t8750-81er-3ffa-d53p-x8557za1942g  802-3-ethernet  eth0
@@ -50,12 +50,12 @@ Wired connection 1  29t8750-81er-3ffa-d53p-x8557za1942g  802-3-ethernet  eth0
 
 #### 1. マウントポイント作成
 
-```
+```Shell
 mkdir /media/sdcard
 ```
 
 #### 2. UUIDの取得
-```
+```Shell
 # blkid
 /dev/mmcblk0: PTUUID="85b83f23-51c4-4403-8bac-906ff5800f3d" PTTYPE="gpt"
 ...
@@ -64,7 +64,7 @@ mkdir /media/sdcard
 
 #### 3. /etc/fstabの編集
 
-```
+```Shell
 /dev/mmcblk0p3 / ext4 noatime,defaults 0 1
 /dev/mmcblk0p1 /boot ext2 noatime,defaults 0 2
 tmpfs /var/log tmpfs defaults 0 0
@@ -73,7 +73,7 @@ UUID=3a729b17-208d-473f-b8e9-f11e542e9f37 /media/sdcard ext4 defaults 0 0	←こ
 
 #### 4. マウントテスト
 
-```
+```Shell
 # mount -a												←これを実行してマウント時にエラーが出ないことを確認する！
 # df -h
 Filesystem      Size  Used Avail Use% Mounted on
@@ -88,14 +88,14 @@ Filesystem      Size  Used Avail Use% Mounted on
 ### （４）主要ソフトウェアのインストール
 
 #### 1. OpenCVコンパイル用スワップ領域の拡張
-```
+```Shell
 # dd if=/dev/zero of=/swapfile bs=1M count=2048 oflag=append conv=notrunc
 # chmod 600 /swapfile
 # mkswap /swapfile
 # swapon /swapfile
 ```
 > ちなみにスワップ領域拡張なしでOpenCVをコンパイルすると、メモリ不足により以下のエラーが発生します：
-```
+```Shell
 # make
 ...
 [100%] Building CXX object modules/python3/CMakeFiles/opencv_python3.dir/__/src2/cv2.cpp.o
@@ -105,7 +105,7 @@ make: *** [all] Error 2
 ```
 
 #### 2. OpenCVインストール
-```
+```Shell
 # apt update
 # apt install build-essential cmake unzip pkg-config
 # apt install libjpeg-dev libpng-dev libtiff-dev
@@ -156,7 +156,7 @@ $ python3
 > Mendel LinuxはDebian10ベースなので今ならもっと手軽にインストールできる方法もありそうですが、Webカメラにうまく接続できないという報告もあったので今回はソースコンパイルしてインストールしました。
 
 #### 3. dlibのインストール
-```
+```Shell
 # cd /media/sdcard
 # mkdir dlib
 # cd dlib
@@ -176,7 +176,7 @@ $ python3
 >setup.pyによるインストールではソースコンパイルも実行されるので１～２時間ほどかかります。
 
 #### 4. face_recognitionのインストール
-```
+```Shell
 # pip3 install face_recognition
 # python3
 >>> import face_recognition
@@ -232,7 +232,7 @@ EdgeTPUで使用されるモデルは、通常のTensorFlowモデルの派生型
 
 以下のプログラムは１枚の顔写真を読み込んで、顔写真の中で顔の領域を四角（以下バウンティング・ボックス）で囲んで表示するプログラムです。コメントにて各処理項目を記述しているのでだいたいの流れはわかると思いますが、このプログラムでは各処理毎に要する時間計測のステートメントが入っています。ご自身で実装される場合は、時間計測用のステートメントを外してください。
 
-```
+```Python
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
@@ -334,7 +334,7 @@ face_recognitionの顔検出手法にはいくつかあるのですが、以下�
 
 以下はface_recognitionによるプログラムです。単純な機能なので、前出のEdgeTPUによる顔検出プログラムとほとんど違いがありません。
 
-```
+```Python
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
@@ -400,7 +400,7 @@ if __name__ == '__main__':
 バウンティング・ボックスは、プログラム毎に色分けしています（青：EdgeTPU、緑：face_recognition[HOG]、赤：face_recognition[CNN]）。
 各方式によってバウンティング・ボックスの大きさは異なっています。EdgeTPUでのバウンティング・ボックス（青）は顔全体が入っているので、後の処理がやりやすいかもしれません。
 
-<center>![図４：顔検出結果](images/Fig-4.jpg  "図４：顔検出結果")</center>
+![図４：顔検出結果](images/Fig-4.jpg  "図４：顔検出結果")
 ><center>図４：顔検出結果（青：EdgeTPU，緑：face_recognition[HOG]，赤：face_recognition[CNN]）</center>
 
 顔画像の切り取りには成功しましたが、処理速度はどうでしょう？
@@ -427,7 +427,7 @@ face_recognition(CNN)はボードの非力なCPUでニューラルネットワ�
 
 １枚の画像から顔検出が出来れば、動画は１枚の画像の集まりなので動画でも簡単に顔検出ができます。カメラ映像を１枚読込み、顔検出して、バウンティング・ボックスを元画像に書き込んで表示する。これをループで繰り返すだけです：
 
-```
+```Python
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
@@ -495,7 +495,7 @@ if __name__ == '__main__':
 上記プログラムを実行した結果が図５の動画です。
 顔を左右に傾けたり、前後に寄ったり離れたり、横を向いたりしてもかなり追従してバウンティング・ボックスを表示してくれます。唯一、お辞儀をして頭を前に傾けたときだけバウンティング・ボックスが表示されませんでしたが、総じてよく追従してくれると思います。
 
-<center>![図５：カメラ映像での顔検出](images/video.gif  "図５：カメラ映像での顔検出")</center>
+![図５：カメラ映像での顔検出](images/video.gif  "図５：カメラ映像での顔検出")
 ><center>図５：カメラ映像での顔検出</center>
 
 ## 6．続きは？
